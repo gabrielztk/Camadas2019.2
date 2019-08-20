@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #####################################################
@@ -11,6 +10,9 @@
 print("comecou")
 
 from enlace import *
+from protocol import *
+from packer import *
+from unpacker import *
 import time
 
 
@@ -20,8 +22,7 @@ import time
 
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
-print("abriu com")
+serialName = "COM5"                  # Windows(variacao de)
 
 def main():
     # Inicializa enlace ... variavel com possui todos os metodos e propriedades do enlace, que funciona em threading
@@ -29,7 +30,10 @@ def main():
     # Ativa comunicacao
     com.enable()
     
-   
+    packer = Packer()
+    unpacker = Unpacker()
+
+    file_num = 1
 
     # Log
     print("-------------------------")
@@ -38,24 +42,89 @@ def main():
     print("-------------------------")
     
     while(True):
+
+
         if com.rx.getIsEmpty():
-            time.sleep(0.00001)
+            time.sleep(0.01)
+
         else:
 
-            sizeBuffer, nRx = com.getData(4)
-            size = int.from_bytes(sizeBuffer, byteorder='big')
+            dataRx, nRx = com.getData(Protocol.max_size)
+            print(com.rx.getBufferLen())
+            data, code, kind, total = unpacker.unpack(dataRx, first=True)
+            print(com.rx.getBufferLen())
+            total = int.from_bytes(total, byteorder=Protocol.byteorder)
+            atual = 1
+            print(com.rx.getBufferLen())
+
+            if code not in Protocol.errors:
+                print("-------------------------")
+                print("Total de pacotes a receber : {}".format(total))
+                print("Tipo de arquivo : {}".format(Protocol.from_kind[kind]))
+                print("Código do envio : {}".format(code))
+                print("-------------------------")
+
+                recieved = data
+
+                back = packer.pack(data, kind, code)
+                com.sendData(back)
+                while(com.tx.getIsBussy()):
+                    pass
+
+                while atual < total:
+                    dataRx, nRx = com.getData(Protocol.max_size)
+                    data, code, atual = unpacker.unpack(dataRx, first=False)
+                    atual = int.from_bytes(atual, byteorder=Protocol.byteorder)
+
+                    if code not in Protocol.errors:
+                        print("-------------------------")
+                        print("Pacote {} recebido".format(atual))
+                        print("-------------------------")
+
+                        recieved += data
+
+                    else:
+
+                        print("-------------------------")
+                        print("Erro {}".format(code))
+                        print("Aguardando reenvio")
+                        print("-------------------------")
+
+                        back = packer.pack(data, kind, code)
+                        com.sendData(back)
+                        while(com.tx.getIsBussy()):
+                            pass
+
+                print("-------------------------")
+                print("Pacotes recebidos com sucesso")
+                print("Salvando")
+                print("-------------------------")
+                
+                to_save = unpacker.destuff(recieved)
+                print(kind)
+                print(Protocol.from_kind[kind])
+                open("recieved{:02}".format(file_num) + Protocol.from_kind[kind],"wb").write(to_save)
+                file_num += 1
+
+                print("-------------------------")
+                print("Aguardando novo envio")
+                print("-------------------------")
 
 
-            rxBuffer, nRx = com.getData(size)
+            else:
+                print("-------------------------")
+                print("Erro {}".format(total))
+                print("Aguardando reenvio")
+                print("-------------------------")
 
-            com.sendData(sizeBuffer)
+                back = packer.pack(data, kind, code)
+                com.sendData(back)
+                while(com.tx.getIsBussy()):
+                    pass
+
         
-            # espera o fim da transmissão
-            while(com.tx.getIsBussy()):
-                pass
+
             
-            f = open("recived_img.png","wb").write(rxBuffer)
-            print(size)
 
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
