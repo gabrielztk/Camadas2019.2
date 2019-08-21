@@ -37,7 +37,7 @@ class RX(object):
                 rxTemp, nRx = self.fisica.read(self.READLEN)
                 if (nRx > 0):
                     self.buffer += rxTemp
-                #time.sleep(0.001)
+                time.sleep(0.001)
 
     def threadStart(self):
         """ Starts RX thread (generate and run)
@@ -87,10 +87,10 @@ class RX(object):
     def getBuffer(self, nData):
         """ retorna e remove n data from buffer
         """
-#        self.threadPause()
+        self.threadPause()
         b           = self.buffer[0:nData]
         self.buffer = self.buffer[nData:]
-#        self.threadResume()
+        self.threadResume()
         return(b)
 
     def getNData(self, size):
@@ -99,8 +99,7 @@ class RX(object):
         """
 
         while(self.getBufferLen() < size):
-            pass
-            #time.sleep(0.001)
+            time.sleep(0.001)
 #                 
         return(self.getBuffer(size))
 
