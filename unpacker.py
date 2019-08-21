@@ -22,8 +22,8 @@ class Unpacker(object):
 
                 size = package[0]
 
-                data += package[12:Protocol.header_size + size]
-                if package[6] in Protocol.errors:
+                data = package[12:Protocol.header_size + size]
+                if package[6] not in Protocol.sucess:
                     code = Protocol.package_resend
 
                 else:
@@ -41,6 +41,7 @@ class Unpacker(object):
             kind = package[5]
             total = package[3:5]
             return data, code, kind, total
+            
         else:
             atual = package[1:3]
             return data, code, atual

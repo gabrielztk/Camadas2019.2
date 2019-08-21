@@ -20,6 +20,9 @@ class Packer(object):
         self.data = data
         self.kind = kind
         self.code = code
+
+        self.stuff()
+
         self.total = ceil(len(self.data)/Protocol.data_size)
         
 
@@ -28,14 +31,10 @@ class Packer(object):
         self.header.updateTotal(self.total)
         self.header.update()
 
-        self.stuff()
         self.sort()
 
         back = self.payload
         self.payload = []
-
-        if len(back)==1:
-            back = back[0]
 
         return back
 
@@ -54,7 +53,7 @@ class Packer(object):
             self.header.updateAtual(count)
             self.header.update()
             
-            self.current = self.data[0:nData] + (0).to_bytes((Protocol.data_size - nData), byteorder=Protocol.byteorder) 
+            self.current = self.data[:nData] + (0).to_bytes((Protocol.data_size - nData), byteorder=Protocol.byteorder) 
             self.data = self.data[nData:]
             self.payload.append(self.header.body + self.current + self.eop.body)
             count += 1
