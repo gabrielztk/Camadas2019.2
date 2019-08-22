@@ -9,7 +9,7 @@ class Header(object):
 
     def __init__(self):
 
-        # Tamnho do Payload
+        # Tamanho do Payload
         self.size = (0).to_bytes(Protocol.size_size, byteorder=Protocol.byteorder)
         # Payload atual
         self.atual = (0).to_bytes(Protocol.atual_size, byteorder=Protocol.byteorder)
@@ -129,12 +129,11 @@ class Protocol(object):
     byteorder = "big"
 
     # Tamanho, em bytes dos componentes do header
-    code_size = 1
     size_size = 1
-    total_size = 2
     atual_size = 2
+    total_size = 2
     kind_size = 1
-
+    code_size = 1
     # Tamnho total do Header e do EOP
 
     header_size = 12
@@ -158,10 +157,12 @@ class Protocol(object):
     # Códigos do tipo de arquivo dos payloads
     py = 1
     jpg = 2
+    png = 3
+
 
     # Dicionário com os tipos
-    to_kind = {".py":py, ".jpg":jpg}
-    from_kind = {py:".py", jpg:".jpg"}
+    to_kind = {".py":py, ".jpg":jpg, ".png":png}
+    from_kind = {py:".py", jpg:".jpg", png:".png"}
 
     # Pacote vazio
     empty_package = (0).to_bytes(112, byteorder="big")
