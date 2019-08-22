@@ -22,7 +22,7 @@ import time
 
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM5"                  # Windows(variacao de)
+serialName = "COM4"                  # Windows(variacao de)
 
 def main():
     # Inicializa enlace ... variavel com possui todos os metodos e propriedades do enlace, que funciona em threading
@@ -49,39 +49,43 @@ def main():
 
         else:
 
-            dataRx, nRx = com.getData(Protocol.max_size)
-            print(com.rx.getBufferLen())
+            start = time.time()
+            dataRx = com.getData(Protocol.max_size, time.time())
             data, code, kind, total = unpacker.unpack(dataRx, first=True)
-            print(com.rx.getBufferLen())
             total = int.from_bytes(total, byteorder=Protocol.byteorder)
             atual = 1
-            print(com.rx.getBufferLen())
+            count = 2
 
-            if code not in Protocol.errors:
+            if code in Protocol.sucess:
                 print("-------------------------")
+                print("Pacote {} recebido".format(atual))
                 print("Total de pacotes a receber : {}".format(total))
                 print("Tipo de arquivo : {}".format(Protocol.from_kind[kind]))
                 print("Código do envio : {}".format(code))
                 print("-------------------------")
 
                 recieved = data
-
                 back = packer.pack(data, kind, code)
-                com.sendData(back)
+                com.sendData(back[0])
                 while(com.tx.getIsBussy()):
                     pass
 
                 while atual < total:
-                    dataRx, nRx = com.getData(Protocol.max_size)
+                    dataRx = com.getData(Protocol.max_size, time.time())
                     data, code, atual = unpacker.unpack(dataRx, first=False)
                     atual = int.from_bytes(atual, byteorder=Protocol.byteorder)
 
-                    if code not in Protocol.errors:
+                    # if atual != count:
+                    #     code = Protocol.package_incorrect_order
+
+                    if code in Protocol.sucess:
                         print("-------------------------")
                         print("Pacote {} recebido".format(atual))
                         print("-------------------------")
 
                         recieved += data
+                        count += 1
+                        
 
                     else:
 
@@ -90,20 +94,23 @@ def main():
                         print("Aguardando reenvio")
                         print("-------------------------")
 
-                        back = packer.pack(data, kind, code)
-                        com.sendData(back)
-                        while(com.tx.getIsBussy()):
-                            pass
+                    back = packer.pack(data, kind, code)
+                    com.sendData(back[0])
+                    while(com.tx.getIsBussy()):
+                        pass
+
+                end = time.time() - start
 
                 print("-------------------------")
                 print("Pacotes recebidos com sucesso")
+                print("Taxa de recepção: {}".format(total*Protocol.max_size/end))
                 print("Salvando")
                 print("-------------------------")
                 
                 to_save = unpacker.destuff(recieved)
                 print(kind)
                 print(Protocol.from_kind[kind])
-                open("recieved{:02}".format(file_num) + Protocol.from_kind[kind],"wb").write(to_save)
+                open("recieved/recieved{:02}".format(file_num) + Protocol.from_kind[kind],"wb").write(to_save)
                 file_num += 1
 
                 print("-------------------------")
@@ -118,7 +125,7 @@ def main():
                 print("-------------------------")
 
                 back = packer.pack(data, kind, code)
-                com.sendData(back)
+                com.sendData(back[0])
                 while(com.tx.getIsBussy()):
                     pass
 
