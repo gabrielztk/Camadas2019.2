@@ -9,6 +9,7 @@
 
 # Importa pacote de tempo
 import time
+from protocol import *
 
 # Threads
 import threading
@@ -93,15 +94,24 @@ class RX(object):
         self.threadResume()
         return(b)
 
-    def getNData(self, size):
+    def getNData(self, size, start):
         """ Read N bytes of data from the reception buffer
         This function blocks until the number of bytes is received
         """
+        timeout = False
 
-        while(self.getBufferLen() < size):
+        while(self.getBufferLen() < size or not timeout):
+            if time.time() - start > Protocol.timeout:
+                timeout = True
             time.sleep(0.001)
-#                 
-        return(self.getBuffer(size))
+
+        if timeout:
+            header = Header()
+            header.updateCode(Protocol.timeout)
+            eop = EOP()
+            return header.body + Protocol.empty_package + eop.body  
+        else: 
+            return(self.getBuffer(size))
 
 
     def clearBuffer(self):

@@ -17,6 +17,7 @@ class Unpacker(object):
         if self.eop.body in package:
 
             place = package.index(self.eop.body)
+            #print("EOP encontrado em {}".format(place))
 
             if place == Protocol.header_size + Protocol.data_size:
 
