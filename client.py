@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #####################################################
@@ -11,10 +10,13 @@
 print("comecou")
 
 from enlace import *
+from protocol import *
+from packer import *
+from unpacker import *
 import time
 import os
 
-path = "C:/Users/Samuel Porto/Desktop/Semestres/4° Semestre/CamadaFisica"
+path = "C:/Users/Samuel Porto/Desktop/Semestres/4° Semestre/CamadaFisica/Camadas2019.2"
 
 entries = os.listdir(path)
 
@@ -40,6 +42,10 @@ def main():
     com = enlace(serialName) # repare que o metodo construtor recebe um string (nome)
     # Ativa comunicacao
     com.enable()
+    time.sleep(1)
+
+    packer = Packer()
+    unpacker = Unpacker()
 
     # Log
     print("-------------------------")
@@ -50,44 +56,52 @@ def main():
     # Carrega dados
     print ("gerando dados para transmissao :")
 
-    img = open(selected,"rb").read()
+    data = open(selected,"rb").read()
     
-    img_len = len(img)
+    type_file = '.'+selected.split('.')[-1]
+    kind = Protocol.to_kind[type_file]
+    code = Protocol.package_delivery
+
+    delivery = packer.pack(data, kind, code)
     
-    txBuffer = (img_len).to_bytes(4, byteorder='big') + img
-    
-    txLen = len(txBuffer)
+    data, code, kind, total = unpacker.unpack(delivery[0], first=True)
+
+    total = int.from_bytes(total, byteorder = Protocol.byteorder)
 
     # Transmite dado
-    print("tentado transmitir .... {} bytes".format(txLen))
-    
+    print("total de pacotes .... {}".format(total))
+
     start = time.time()
+    count = 1
+    while count <= total:
+        com.sendData(delivery[count-1])
+
+        while(com.tx.getIsBussy()):
+            pass
+
+        print('enviando {0} de {1}'.format(count,total))
     
-    com.sendData(txBuffer)
+        rxBuffer = com.getData(Protocol.max_size)
 
-    while(com.tx.getIsBussy()):
-        pass
+        response, code, atual = unpacker.unpack(rxBuffer)
 
-    txSize = com.tx.getStatus()
- 
-    rxBuffer, nRx = com.getData(4)
+        if code in Protocol.sucess:
+            print("pacote enviado com sucesso")
+            count +=1
+        else:
+            print("erro")
     
     final = time.time() - start
 
     # log
-    print ("Lido              {} bytes ".format(nRx))
-    print ("Performance              {} bytes/segundo ".format(int.from_bytes(rxBuffer, byteorder='big')/final))
-    
-    print (rxBuffer)
+    print ("Taxa de transmissão              {} bytes/segundo ".format(len(delivery)*128/final))
+    print ("OverHead              {} ".format(len(delivery)*128/len(data)))
 
-    print(int.from_bytes(rxBuffer,'big'))
-
-    # Encerra comunicação
     print("-------------------------")
     print("Comunicação encerrada")
     print("-------------------------")
     
-    f = open("img_retorno.png","wb").write(rxBuffer)
+    # f = open("img_retorno.png","wb").write(rxBuffer)
     
     com.disable()
 
