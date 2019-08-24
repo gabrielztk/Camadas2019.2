@@ -114,10 +114,12 @@ def main():
                         print("-------------------------")
 
 
-                    back = packer.pack_return(code, atual)
+                    back = packer.pack_return(code, count)
+                    com.rx.clearBuffer()
                     com.sendData(back)
                     while(com.tx.getIsBussy()):
                         pass
+                    
 
                 end = time.time() - start
 
