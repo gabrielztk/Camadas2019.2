@@ -50,7 +50,7 @@ class Packer(object):
         self.header.update()
 
 
-        return self.header + Protocol.empty_package + self.eop
+        return self.header.body + Protocol.empty_package + self.eop.body
 
 
     def sort(self):

@@ -48,6 +48,7 @@ def main():
     com = enlace(serialName) # repare que o metodo construtor recebe um string (nome)
     # Ativa comunicacao
     com.enable()
+    com.rx.clearBuffer()
     time.sleep(1)
 
     packer = Packer()
