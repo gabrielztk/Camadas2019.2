@@ -39,6 +39,20 @@ class Packer(object):
         return back
 
 
+    def pack_return(self, code, atual):
+
+        self.kind = atual
+        self.code = code
+        
+
+        self.header.updateCode(code)
+        self.header.updateAtual
+        self.header.update()
+
+
+        return self.header.body + Protocol.empty_package + self.eop.body
+
+
     def sort(self):
 
         count = 1

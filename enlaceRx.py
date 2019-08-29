@@ -100,14 +100,15 @@ class RX(object):
         """
         timeout = False
 
-        while(self.getBufferLen() < size or not timeout):
+        while(self.getBufferLen() < size and not timeout):
             if time.time() - start > Protocol.timeout:
                 timeout = True
             time.sleep(0.001)
 
         if timeout:
             header = Header()
-            header.updateCode(Protocol.timeout)
+            header.updateCode(Protocol.package_timeout)
+            header.update()
             eop = EOP()
             return header.body + Protocol.empty_package + eop.body  
         else: 

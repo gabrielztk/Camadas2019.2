@@ -13,15 +13,14 @@ from enlace import *
 from protocol import *
 from packer import *
 from unpacker import *
+from ports import *
 import time
 import os
 
-path = "C:/Users/Samuel Porto/Desktop/Semestres/4° Semestre/CamadaFisica/Camadas2019.2"
-
+path = os.getcwd()
 entries = os.listdir(path)
 
 i = 1
-
 print('Arquivos no diretório:')
 
 for entry in entries:
@@ -29,19 +28,27 @@ for entry in entries:
     i+=1
     
 a = int(input('Selecione o número do arquivo que voce deseja enviar: '))
-
 selected = entries[a-1]
 
 print('\nArquivo selecionado: {0}\n'.format(selected))
 
-serialName = "COM12"
-print("abriu com")
+i = 1
+print('Selecione uma porta para a comunicação')
+ports = serial_ports()
+
+for port in ports:
+    print('{0} - {1}'.format(i,port))
+    i+=1
+
+p = int(input('Selecione o número da porta que deseja usar: '))
+serialName = ports[p-1]
 
 def main():
     # Inicializa enlace ... variavel com possui todos os metodos e propriedades do enlace, que funciona em threading
     com = enlace(serialName) # repare que o metodo construtor recebe um string (nome)
     # Ativa comunicacao
     com.enable()
+    com.rx.clearBuffer()
     time.sleep(1)
 
     packer = Packer()
@@ -54,7 +61,7 @@ def main():
     print("-------------------------")
 
     # Carrega dados
-    print ("gerando dados para transmissao :")
+    print ("Gerando dados para transmissao :")
 
     data = open(selected,"rb").read()
     
@@ -69,7 +76,11 @@ def main():
     total = int.from_bytes(total, byteorder = Protocol.byteorder)
 
     # Transmite dado
-    print("total de pacotes .... {}".format(total))
+    print("-------------------------")
+    print("Total de pacotes para envio : {}".format(total))
+    print("Tipo de arquivo : {}".format(Protocol.from_kind[kind]))
+    print("Código do envio : {}".format(code))
+    print("-------------------------")
 
     start = time.time()
     count = 1
@@ -79,23 +90,38 @@ def main():
         while(com.tx.getIsBussy()):
             pass
 
-        print('enviando {0} de {1}'.format(count,total))
+        print("-------------------------")
+        print('Enviando {0} de {1}'.format(count,total))
+        print("-------------------------")
     
-        rxBuffer = com.getData(Protocol.max_size)
+        rxBuffer = com.getData(Protocol.max_size, time.time())
 
         response, code, atual = unpacker.unpack(rxBuffer)
 
         if code in Protocol.sucess:
-            print("pacote enviado com sucesso")
+            print("-------------------------")
+            print("Pacote enviado com sucesso")
+            print("-------------------------")
             count +=1
+        elif code == Protocol.package_incorrect_order:
+            count = atual
+            print("-------------------------")
+            print("Erro {}".format(code))
+            print("Reenviando pacote")
+            print("-------------------------")
         else:
-            print("erro")
+            print("-------------------------")
+            print("Erro {}".format(code))
+            print("Reenviando pacote")
+            print("-------------------------")
     
     final = time.time() - start
 
     # log
-    print ("Taxa de transmissão              {} bytes/segundo ".format(len(delivery)*128/final))
-    print ("OverHead              {} ".format(len(delivery)*128/len(data)))
+    print("-------------------------")
+    print ("Taxa de transmissão {} (bytes/segundo) ".format(len(delivery)*128/final))
+    print ("OverHead {}".format(len(delivery)*128/len(data)))
+    print("-------------------------")
 
     print("-------------------------")
     print("Comunicação encerrada")

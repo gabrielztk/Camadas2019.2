@@ -153,7 +153,7 @@ class Protocol(object):
     package_timeout = 100
 
     # Lista com códigos de erro
-    errors = [package_eop_out_of_place, package_eop_not_found, package_timeout]
+    errors = [package_eop_out_of_place, package_eop_not_found, package_timeout, package_incorrect_order]
     sucess = [package_delivery, package_ok]
 
     # Códigos do tipo de arquivo dos payloads
@@ -166,7 +166,7 @@ class Protocol(object):
     from_kind = {py:".py", jpg:".jpg", png:".png"}
 
     # Pacote vazio
-    empty_package = (0).to_bytes(112, byteorder="big")
+    empty_package = (0).to_bytes(data_size, byteorder=byteorder)
 
     # Time-out
     timeout = 2.5
