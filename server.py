@@ -47,6 +47,8 @@ def main():
     com.enable()
     com.rx.clearBuffer()
     time.sleep(1)
+
+    my_server = Protocol.sever_number
     
     packer = Packer()
     unpacker = Unpacker()
@@ -59,15 +61,21 @@ def main():
     print("  porta : {}".format(com.fisica.name))
     print("-------------------------")
     
+    ocioso = True
+
     while(True):
 
-
-        if com.rx.getIsEmpty():
-            time.sleep(0.01)
+        if ocioso:
+            dataRx = com.getData(Protocol.max_size, time.time())
+            data, code, kind, total, server = unpacker.unpack(dataRx, first=True)
+            if code == Protocol.type_client_call and server == my_server:
+                ocioso = False
+            time.sleep(1)
 
         else:
 
             start = time.time()
+
             dataRx = com.getData(Protocol.max_size, time.time())
             data, code, kind, total = unpacker.unpack(dataRx, first=True)
             total = int.from_bytes(total, byteorder=Protocol.byteorder)
@@ -83,12 +91,12 @@ def main():
                 print("-------------------------")
 
                 recieved = data
-                back = packer.pack_return(code, atual)
+                back = packer.pack_message(code, atual, total, server)
                 com.sendData(back)
                 while(com.tx.getIsBussy()):
                     pass
 
-                while atual < total:
+                while count <= total:
                     dataRx = com.getData(Protocol.max_size, time.time())
                     data, code, atual = unpacker.unpack(dataRx)
                     atual = int.from_bytes(atual, byteorder=Protocol.byteorder)
@@ -114,7 +122,7 @@ def main():
                         print("-------------------------")
 
 
-                    back = packer.pack_return(code, count)
+                    back = packer.pack_message(code, count, total, server)
                     com.rx.clearBuffer()
                     com.sendData(back)
                     while(com.tx.getIsBussy()):
@@ -145,7 +153,7 @@ def main():
                 print("Aguardando reenvio")
                 print("-------------------------")
 
-                back = packer.pack_return(code, atual)
+                back = packer.pack_message(code, atual, total, server)
                 com.sendData(back)
                 while(com.tx.getIsBussy()):
                     pass

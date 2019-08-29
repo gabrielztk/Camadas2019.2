@@ -21,26 +21,21 @@ class Unpacker(object):
             if place == Protocol.header_size + Protocol.data_size:
 
                 size = package[0]
-
                 data = package[12:Protocol.header_size + size]
-                if package[6] not in Protocol.sucess:
-                    code = Protocol.package_resend
-
-                else:
-                    code = Protocol.package_ok
+                code = package[6]
 
             else:
-
-                code = Protocol.package_eop_out_of_place
+                code = Protocol.type_error
 
         else:
 
-            code = Protocol.package_eop_not_found
+            code = Protocol.type_error
 
         if first == True:
-            kind = package[5]
             total = package[3:5]
-            return data, code, kind, total
+            kind = package[5]
+            server = = package[7]
+            return data, code, kind, total, server
             
         else:
             atual = package[1:3]
