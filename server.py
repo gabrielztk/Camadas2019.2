@@ -62,6 +62,8 @@ def main():
     print("-------------------------")
     
     ocioso = True
+    serverReady_message_sent = False
+    count = 1
 
     while(True):
 
@@ -71,64 +73,53 @@ def main():
             if code == Protocol.type_client_call and server == my_server:
                 ocioso = False
             time.sleep(1)
+        
+        elif serverReady_message_sent == False:
+            message = packer.pack_message(Protocol.type_server_ready, total, total, my_server)
+            com.sendData(message)
+            while(com.tx.getIsBussy()):
+                pass
+            serverReady_message_sent = True
+
+            print("-------------------------")
+            print("Total de pacotes a receber : {}".format(total))
+            print("Tipo de arquivo : {}".format(Protocol.from_kind[kind]))
+            print("-------------------------")
+
+            recieved = bytes()
+            start = time.time()
+            time_out_time = time.time()
 
         else:
+            if count <= total and (time.time() - time_out_time) < Protocol.great_timeout:
 
-            start = time.time()
+                dataRx = com.getData(Protocol.max_size, time.time())
+                data, code, atual = unpacker.unpack(dataRx)
 
-            dataRx = com.getData(Protocol.max_size, time.time())
-            data, code, kind, total = unpacker.unpack(dataRx, first=True)
-            total = int.from_bytes(total, byteorder=Protocol.byteorder)
-            atual = 1
-            count = 2
+                if code == Protocol.type_package_delivery and atual == count:
+                    print("-------------------------")
+                    print("Pacote {} de {} recebido".format(atual, total))
+                    print("-------------------------")
 
-            if code in Protocol.sucess:
-                print("-------------------------")
-                print("Total de pacotes a receber : {}".format(total))
-                print("Tipo de arquivo : {}".format(Protocol.from_kind[kind]))
-                print("Código do envio : {}".format(code))
-                print("Pacote {} recebido".format(atual))
-                print("-------------------------")
-
-                recieved = data
-                back = packer.pack_message(code, atual, total, server)
-                com.sendData(back)
-                while(com.tx.getIsBussy()):
-                    pass
-
-                while count <= total:
-                    dataRx = com.getData(Protocol.max_size, time.time())
-                    data, code, atual = unpacker.unpack(dataRx)
-                    atual = int.from_bytes(atual, byteorder=Protocol.byteorder)
-
-                    if atual != count:
-                        code = Protocol.package_incorrect_order
-
-
-
-                    if code in Protocol.sucess:
-                        print("-------------------------")
-                        print("Pacote {} de {} recebido".format(atual, total))
-                        print("-------------------------")
-
-                        recieved += data
-                        count += 1
-                        
-
-                    else:
-                        print("-------------------------")
-                        print("Erro {}".format(code))
-                        print("Aguardando reenvio")
-                        print("-------------------------")
-
-
-                    back = packer.pack_message(code, count, total, server)
-                    com.rx.clearBuffer()
-                    com.sendData(back)
+                    recieved += data
+                    message = packer.pack_message(Protocol.type_package_ok, count, total, my_server)
+                    com.sendData(message)
                     while(com.tx.getIsBussy()):
                         pass
-                    
+                    count += 1
 
+                else:
+                    print("-------------------------")
+                    print("Erro")
+                    print("Aguardando reenvio")
+                    print("-------------------------")
+
+                    message = packer.pack_message(Protocol.type_error, count, total, my_server)
+                    com.sendData(message)
+                    while(com.tx.getIsBussy()):
+                        pass
+
+            elif count > total:
                 end = time.time() - start
 
                 print("-------------------------")
@@ -144,23 +135,24 @@ def main():
                 print("-------------------------")
                 print("Aguardando novo envio")
                 print("-------------------------")
-                com.rx.clearBuffer()
 
+                ocioso = True
+                serverReady_message_sent = False
+                count = 1
 
             else:
                 print("-------------------------")
-                print("Erro {}".format(code))
-                print("Aguardando reenvio")
+                print("Timeout")
+                print("Aguardando novo envio")
                 print("-------------------------")
-
-                back = packer.pack_message(code, atual, total, server)
-                com.sendData(back)
+                message = packer.pack_message(Protocol.type_time_out, count, total, my_server)
+                com.sendData(message)
                 while(com.tx.getIsBussy()):
                     pass
 
-        
-
-            
+                ocioso = True
+                serverReady_message_sent = False
+                count = 1
 
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda

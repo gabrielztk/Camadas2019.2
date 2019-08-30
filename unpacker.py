@@ -32,13 +32,13 @@ class Unpacker(object):
             code = Protocol.type_error
 
         if first == True:
-            total = package[3:5]
+            total = int.from_bytes(package[3:5], byteorder=Protocol.byteorder)
             kind = package[5]
-            server = = package[7]
+            server =  package[7]
             return data, code, kind, total, server
             
         else:
-            atual = package[1:3]
+            atual = int.from_bytes(package[1:3], byteorder=Protocol.byteorder)
             return data, code, atual
 
     def destuff(self, data):
