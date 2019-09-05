@@ -34,7 +34,7 @@ class Unpacker(object):
         if first == True:
             total = package[3:5]
             kind = package[5]
-            server = = package[7]
+            server = package[7]
             return data, code, kind, total, server
             
         else:
