@@ -12,7 +12,7 @@ class Unpacker(object):
 
     def unpack(self, package, first=False):
 
-        data = bytearray()
+        data = Protocol.empty_package
 
         if self.eop.body in package:
 
@@ -21,24 +21,27 @@ class Unpacker(object):
             if place == Protocol.header_size + Protocol.data_size:
 
                 size = package[0]
-                data = package[12:Protocol.header_size + size]
                 code = package[6]
+                if code != Protocol.type_error:
+                    data = package[12:Protocol.header_size + size]
 
             else:
                 code = Protocol.type_error
+                
 
         else:
-
             code = Protocol.type_error
 
         if first == True:
-            total = package[3:5]
+            total = int.from_bytes(package[3:5], byteorder=Protocol.byteorder)
             kind = package[5]
+
             server = package[7]
+
             return data, code, kind, total, server
             
         else:
-            atual = package[1:3]
+            atual = int.from_bytes(package[1:3], byteorder=Protocol.byteorder)
             return data, code, atual
 
     def destuff(self, data):
