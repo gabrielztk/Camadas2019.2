@@ -68,6 +68,7 @@ class TX(object):
         of transmission, this erase all content of the buffer
         in order to save the new value.
         """
+
         self.transLen   = 0
         self.buffer = data
         self.threadMutex  = True

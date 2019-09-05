@@ -70,6 +70,7 @@ def main():
         if ocioso:
             dataRx = com.getData(Protocol.max_size, time.time())
             data, code, kind, total, server = unpacker.unpack(dataRx, first=True)
+
             if code == Protocol.type_client_call and server == my_server:
                 ocioso = False
                 print("-------------------------")
@@ -93,7 +94,7 @@ def main():
             start = time.time()
             time_out_time = time.time()
 
-        else
+        else:
             dataRx = com.getData(Protocol.max_size, time.time())
             data, code, atual = unpacker.unpack(dataRx)
 
@@ -110,7 +111,7 @@ def main():
                     print("-------------------------")
 
                     recieved += data
-                    message = packer.pack_message(Protocol.type_package_ok, count, total, my_server)
+                    message = packer.pack_message(Protocol.type_package_ok, count, total, Protocol.sever_number)
                     com.sendData(message)
                     while(com.tx.getIsBussy()):
                         pass
@@ -123,7 +124,7 @@ def main():
                     print("Aguardando reenvio")
                     print("-------------------------")
 
-                    message = packer.pack_message(Protocol.type_error, count, total, my_server)
+                    message = packer.pack_message(Protocol.type_error, count, total, Protocol.sever_number)
                     com.sendData(message)
                     while(com.tx.getIsBussy()):
                         pass
@@ -148,6 +149,7 @@ def main():
 
                 ocioso = True
                 serverReady_message_sent = False
+                com.rx.clearBuffer()
                 count = 1
 
             else:

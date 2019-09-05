@@ -105,6 +105,7 @@ class RX(object):
                 timeout = True
             time.sleep(0.001)
 
+
         if timeout:
             header = Header()
             header.updateCode(Protocol.type_error)
