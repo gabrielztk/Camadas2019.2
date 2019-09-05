@@ -49,7 +49,9 @@ def main():
     # Ativa comunicacao
     com.enable()
     com.rx.clearBuffer()
-    time.sleep(1)
+#    time.sleep(1)
+    
+    servidor = Protocol.sever_number
 
     packer = Packer()
     unpacker = Unpacker()
@@ -67,13 +69,30 @@ def main():
     
     type_file = '.'+selected.split('.')[-1]
     kind = Protocol.to_kind[type_file]
-    code = Protocol.package_delivery
+    code = Protocol.type_package_delivery
 
     delivery = packer.pack(data, kind, code)
     
-    data, code, kind, total = unpacker.unpack(delivery[0], first=True)
+    data, code, kind, total, server = unpacker.unpack(delivery[0], first=True)
 
     total = int.from_bytes(total, byteorder = Protocol.byteorder)
+    
+    contador = 1
+    code = Protocol.type_client_call
+    back = packer.pack_message(code, contador, total, servidor)
+    
+    while code != Protocol.type_server_ready: 
+        com.rx.clearBuffer()
+        com.sendData(back)
+        
+        while(com.tx.getIsBussy()):
+            pass
+        
+#        time.sleep(5)
+        
+        rxBuffer = com.getData(Protocol.max_size, time.time())
+                
+        response, code, atual = unpacker.unpack(rxBuffer)  
 
     # Transmite dado
     print("-------------------------")
@@ -82,50 +101,114 @@ def main():
     print("Código do envio : {}".format(code))
     print("-------------------------")
 
-    start = time.time()
     count = 1
+    timer1 = time.time()
+    timer2 = time.time()
+    
     while count <= total:
+        start = time.time()
         com.sendData(delivery[count-1])
 
         while(com.tx.getIsBussy()):
             pass
+        
+        data, code, atual = unpacker.unpack(delivery[count-1])
+        atual = int.from_bytes(atual, byteorder = Protocol.byteorder)
 
         print("-------------------------")
         print('Enviando {0} de {1}'.format(count,total))
         print("-------------------------")
-    
+        
         rxBuffer = com.getData(Protocol.max_size, time.time())
 
         response, code, atual = unpacker.unpack(rxBuffer)
-
-        if code in Protocol.sucess:
-            print("-------------------------")
-            print("Pacote enviado com sucesso")
-            print("-------------------------")
-            count +=1
-        elif code == Protocol.package_incorrect_order:
-            count = atual
-            print("-------------------------")
-            print("Erro {}".format(code))
-            print("Reenviando pacote")
-            print("-------------------------")
-        else:
-            print("-------------------------")
-            print("Erro {}".format(code))
-            print("Reenviando pacote")
-            print("-------------------------")
+        
+        out = False
+        time_out = False
+        
+        while not out:
+            if code == Protocol.type_package_ok:
+                print("-------------------------")
+                print("Pacote enviado com sucesso")
+                print("-------------------------")
+                count +=1
+                out = True
+                timer1 = time.time()
+                timer2 = time.time()
+            
+            if time.time() - timer1 > 5:            
+                com.sendData(delivery[count-1])
     
-    final = time.time() - start
-
-    # log
-    print("-------------------------")
-    print ("Taxa de transmissão {} (bytes/segundo) ".format(len(delivery)*128/final))
-    print ("OverHead {}".format(len(delivery)*128/len(data)))
-    print("-------------------------")
-
-    print("-------------------------")
-    print("Comunicação encerrada")
-    print("-------------------------")
+                while(com.tx.getIsBussy()):
+                    pass
+                
+                timer1 = time.time()
+                
+                data, code, atual = unpacker.unpack(delivery[count-1])
+                atual = int.from_bytes(atual, byteorder = Protocol.byteorder)
+                
+                print("timer1 > 5, enviando atual {}".format(atual))
+                
+            if time.time() - timer2 > 20:
+                out = True
+                time_out = True
+                
+                code = Protocol.type_time_out
+                back = packer.pack_message(code, contador, total, server)
+                
+                com.rx.clearBuffer()
+                com.sendData(back)
+                
+                while(com.tx.getIsBussy()):
+                    pass
+        
+            else:
+                rxBuffer = com.getData(Protocol.max_size, time.time())
+        
+                response, code, atual = unpacker.unpack(rxBuffer)
+                atual = int.from_bytes(atual, byteorder = Protocol.byteorder)
+                
+                if code == Protocol.type_error:
+                    print("erro {} esperado {}".format(code, atual))
+                    out = True
+                    timer1 = time.time()
+                    timer2 = time.time()
+                else:
+                    pass
+            
+        if time_out:
+            break
+            
+#        elif code == Protocol.package_incorrect_order:
+#            count = atual
+#            print("-------------------------")
+#            print("Erro {}".format(code))
+#            print("Reenviando pacote")
+#            print("-------------------------")
+#        else:
+#            print("-------------------------")
+#            print("Erro {}".format(code))
+#            print("Reenviando pacote")
+#            print("-------------------------")
+            
+    if time_out:
+        print("-------------------------")
+        print("TIME OUT")
+        print("Comunicação encerrada")
+        print("-------------------------")
+    
+    else:
+        final = time.time() - start
+    
+        # log
+        print("-------------------------")
+        print ("Taxa de transmissão {} (bytes/segundo) ".format(len(delivery)*128/final))
+        print ("OverHead {}".format(len(delivery)*128/len(data)))
+        print("-------------------------")
+    
+        print("-------------------------")
+        print("Comunicação encerrada")
+        print("-------------------------")
     
     # f = open("img_retorno.png","wb").write(rxBuffer)
     

@@ -35,7 +35,9 @@ class Unpacker(object):
         if first == True:
             total = int.from_bytes(package[3:5], byteorder=Protocol.byteorder)
             kind = package[5]
-            server =  package[7]
+
+            server = package[7]
+
             return data, code, kind, total, server
             
         else:
