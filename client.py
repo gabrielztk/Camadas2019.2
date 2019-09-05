@@ -74,25 +74,20 @@ def main():
     delivery = packer.pack(data, kind, code)
     
     data, code, kind, total, server = unpacker.unpack(delivery[0], first=True)
-
-    total = int.from_bytes(total, byteorder = Protocol.byteorder)
     
     contador = 1
     code = Protocol.type_client_call
     back = packer.pack_message(code, contador, total, servidor)
     
     while code != Protocol.type_server_ready: 
-        com.rx.clearBuffer()
         com.sendData(back)
         
         while(com.tx.getIsBussy()):
             pass
         
-#        time.sleep(5)
-        
         rxBuffer = com.getData(Protocol.max_size, time.time())
                 
-        response, code, atual = unpacker.unpack(rxBuffer)  
+        response, code, atual = unpacker.unpack(rxBuffer)
 
     # Transmite dado
     print("-------------------------")
@@ -105,7 +100,7 @@ def main():
     timer1 = time.time()
     timer2 = time.time()
     
-    while count <= total:
+    while count <= total:        
         start = time.time()
         com.sendData(delivery[count-1])
 
@@ -113,20 +108,19 @@ def main():
             pass
         
         data, code, atual = unpacker.unpack(delivery[count-1])
-        atual = int.from_bytes(atual, byteorder = Protocol.byteorder)
 
         print("-------------------------")
         print('Enviando {0} de {1}'.format(count,total))
         print("-------------------------")
         
-        rxBuffer = com.getData(Protocol.max_size, time.time())
-
-        response, code, atual = unpacker.unpack(rxBuffer)
-        
         out = False
         time_out = False
         
-        while not out:
+        while not out:   
+            rxBuffer = com.getData(Protocol.max_size, time.time())
+    
+            response, code, atual = unpacker.unpack(rxBuffer)
+        
             if code == Protocol.type_package_ok:
                 print("-------------------------")
                 print("Pacote enviado com sucesso")
@@ -135,21 +129,8 @@ def main():
                 out = True
                 timer1 = time.time()
                 timer2 = time.time()
-            
-            if time.time() - timer1 > 5:            
-                com.sendData(delivery[count-1])
-    
-                while(com.tx.getIsBussy()):
-                    pass
                 
-                timer1 = time.time()
-                
-                data, code, atual = unpacker.unpack(delivery[count-1])
-                atual = int.from_bytes(atual, byteorder = Protocol.byteorder)
-                
-                print("timer1 > 5, enviando atual {}".format(atual))
-                
-            if time.time() - timer2 > 20:
+            elif time.time() - timer2 > 20:
                 out = True
                 time_out = True
                 
@@ -161,20 +142,27 @@ def main():
                 
                 while(com.tx.getIsBussy()):
                     pass
-        
-            else:
-                rxBuffer = com.getData(Protocol.max_size, time.time())
-        
-                response, code, atual = unpacker.unpack(rxBuffer)
-                atual = int.from_bytes(atual, byteorder = Protocol.byteorder)
+           
+            elif time.time() - timer1 > 5:            
+                com.sendData(delivery[count-1])
+    
+                while(com.tx.getIsBussy()):
+                    pass
                 
-                if code == Protocol.type_error:
+                timer1 = time.time()
+                
+                data, code, atual = unpacker.unpack(delivery[count-1])
+                
+                print("timeout timer1")
+                
+            elif code == Protocol.type_error:
                     print("erro {} esperado {}".format(code, atual))
+                    count = atual
                     out = True
                     timer1 = time.time()
                     timer2 = time.time()
-                else:
-                    pass
+            else:
+                pass
             
         if time_out:
             break
@@ -205,6 +193,8 @@ def main():
         print ("Taxa de transmissão {} (bytes/segundo) ".format(len(delivery)*128/final))
         print ("OverHead {}".format(len(delivery)*128/len(data)))
         print("-------------------------")
+        
+        com.rx.clearBuffer()
     
         print("-------------------------")
         print("Comunicação encerrada")
