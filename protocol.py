@@ -19,15 +19,17 @@ class Header(object):
         self.kind = (0).to_bytes(Protocol.kind_size, byteorder=Protocol.byteorder)
         # Tipo de arquivo do payload
         self.code = (0).to_bytes(Protocol.code_size, byteorder=Protocol.byteorder)
+        # Número do server
+        self.server = (0).to_bytes(1, byteorder=Protocol.byteorder)
         # Bytes livres
-        self.free = (0).to_bytes(5, byteorder=Protocol.byteorder)
+        self.free = (0).to_bytes(4, byteorder=Protocol.byteorder)
         # Concatendo os bytes na ordem desejada
-        self.body = self.size + self.atual + self.total + self.kind + self.code + self.free
+        self.body = self.size + self.atual + self.total + self.kind + self.code + self.server + self.free
         # Tamanho do header
         self.length = len(self.body)
 
     def update(self):
-        self.body = self.size + self.atual + self.total + self.kind + self.code + self.free
+        self.body = self.size + self.atual + self.total + self.kind + self.code + self.server + self.free
 
     def updateSize(self, size):
         self.size = (size).to_bytes(Protocol.size_size, byteorder=Protocol.byteorder)
@@ -43,6 +45,9 @@ class Header(object):
 
     def updateCode(self, code):
         self.code = (code).to_bytes(Protocol.code_size, byteorder=Protocol.byteorder)
+
+    def updateServer(self, server):
+        self.server = (server).to_bytes(Protocol.server_size, byteorder=Protocol.byteorder)
 
 
 class EOP(object):
@@ -134,16 +139,25 @@ class Protocol(object):
     total_size = 2
     kind_size = 1
     code_size = 1
+    server_size = 1
     # Tamnho total do Header e do EOP
 
     header_size = 12
     eop_size = 4
 
     # Tamanho máximo de dados por payload
-    max_size = 128
+    max_size = 144
     data_size = max_size - (header_size + eop_size)
 
     # Códigos de identificação dos payloads
+    type_client_call = 1
+    type_server_ready = 2
+    type_package_delivery = 3
+    type_package_ok = 4
+    type_time_out = 5
+    type_error = 6
+
+
     package_delivery = 25
     package_ok = 55
     package_eop_out_of_place = 160
@@ -153,8 +167,8 @@ class Protocol(object):
     package_timeout = 100
 
     # Lista com códigos de erro
-    errors = [package_eop_out_of_place, package_eop_not_found, package_timeout, package_incorrect_order]
-    sucess = [package_delivery, package_ok]
+    errors = [type_error, type_time_out]
+    sucess = [type_client_call, type_server_ready, type_package_delivery, type_package_ok]
 
     # Códigos do tipo de arquivo dos payloads
     py = 1
@@ -169,5 +183,9 @@ class Protocol(object):
     empty_package = (0).to_bytes(data_size, byteorder=byteorder)
 
     # Time-out
-    timeout = 2.5
+    small_timeout = 5
+    great_timeout = 20
+
+    # Número do server
+    sever_number = 69
 

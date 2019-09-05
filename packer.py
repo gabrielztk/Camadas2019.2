@@ -39,14 +39,12 @@ class Packer(object):
         return back
 
 
-    def pack_return(self, code, atual):
-
-        self.kind = atual
-        self.code = code
-        
+    def pack_message(self, code, atual, total, server):
 
         self.header.updateCode(code)
-        self.header.updateAtual
+        self.header.updateAtual(atual)
+        self.header.updateTotal(total)
+        self.header.updateServer(server)
         self.header.update()
 
 
