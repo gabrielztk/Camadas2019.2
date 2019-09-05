@@ -111,7 +111,7 @@ class RX(object):
             header.update()
             eop = EOP()
             return header.body + Protocol.empty_package + eop.body  
-        else: 
+        else:
             return(self.getBuffer(size))
 
 

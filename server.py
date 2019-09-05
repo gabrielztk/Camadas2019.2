@@ -46,7 +46,7 @@ def main():
     # Ativa comunicacao
     com.enable()
     com.rx.clearBuffer()
-    time.sleep(1)
+
 
     my_server = Protocol.sever_number
     
@@ -72,7 +72,10 @@ def main():
             data, code, kind, total, server = unpacker.unpack(dataRx, first=True)
             if code == Protocol.type_client_call and server == my_server:
                 ocioso = False
-            time.sleep(1)
+                print("-------------------------")
+                print("Server chamado pelo client")
+                print("-------------------------")
+            
         
         elif serverReady_message_sent == False:
             message = packer.pack_message(Protocol.type_server_ready, total, total, my_server)
@@ -90,11 +93,16 @@ def main():
             start = time.time()
             time_out_time = time.time()
 
-        else:
-            if count <= total and (time.time() - time_out_time) < Protocol.great_timeout:
+        else
+            dataRx = com.getData(Protocol.max_size, time.time())
+            data, code, atual = unpacker.unpack(dataRx)
 
-                dataRx = com.getData(Protocol.max_size, time.time())
-                data, code, atual = unpacker.unpack(dataRx)
+            print("-------------------------")
+            print("Pacote aberto")
+            print("Contador {} e atual {} e código {}".format(count, atual, code))
+            print("-------------------------")
+
+            if count <= total and (time.time() - time_out_time) < Protocol.great_timeout:
 
                 if code == Protocol.type_package_delivery and atual == count:
                     print("-------------------------")
@@ -107,6 +115,7 @@ def main():
                     while(com.tx.getIsBussy()):
                         pass
                     count += 1
+                    time_out_time = time.time()
 
                 else:
                     print("-------------------------")
@@ -118,6 +127,7 @@ def main():
                     com.sendData(message)
                     while(com.tx.getIsBussy()):
                         pass
+                    
 
             elif count > total:
                 end = time.time() - start

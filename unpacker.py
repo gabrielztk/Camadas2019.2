@@ -12,7 +12,7 @@ class Unpacker(object):
 
     def unpack(self, package, first=False):
 
-        data = bytearray()
+        data = Protocol.empty_package
 
         if self.eop.body in package:
 
@@ -21,14 +21,15 @@ class Unpacker(object):
             if place == Protocol.header_size + Protocol.data_size:
 
                 size = package[0]
-                data = package[12:Protocol.header_size + size]
                 code = package[6]
+                if code != Protocol.type_error:
+                    data = package[12:Protocol.header_size + size]
 
             else:
                 code = Protocol.type_error
+                
 
         else:
-
             code = Protocol.type_error
 
         if first == True:
