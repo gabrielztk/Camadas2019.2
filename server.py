@@ -15,6 +15,7 @@ from packer import *
 from unpacker import *
 from ports import *
 import time
+from functions import select_port
 
 
 # Serial Com Port
@@ -28,16 +29,8 @@ import time
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
 #serialName = "COM4"                  # Windows(variacao de)
 
-i = 1
-print('Selecione uma porta para a comunicação')
-ports = serial_ports()
 
-for port in ports:
-    print('{0} - {1}'.format(i,port))
-    i+=1
-
-p = int(input('Selecione o número da porta que deseja usar: '))
-serialName = ports[p-1]
+serialName = select_port()
 
 
 def main():
@@ -67,18 +60,22 @@ def main():
 
     while(True):
 
+        # Server está ocioso
         if ocioso:
             dataRx = com.getData(Protocol.max_size, time.time())
             data, code, kind, total, server = unpacker.unpack(dataRx, first=True)
 
+            # Server checa se o código e número de server da mensagem estão certos
             if code == Protocol.type_client_call and server == my_server:
+                # Server deixa de estar ocioso
                 ocioso = False
                 print("-------------------------")
                 print("Server chamado pelo client")
                 print("-------------------------")
-            
-        
+
+        # Server não está mais ociono mas ainda não mandou uma mensagem com Código 2   
         elif serverReady_message_sent == False:
+            
             message = packer.pack_message(Protocol.type_server_ready, total, total, my_server)
             com.sendData(message)
             while(com.tx.getIsBussy()):
@@ -90,11 +87,14 @@ def main():
             print("Tipo de arquivo : {}".format(Protocol.from_kind[kind]))
             print("-------------------------")
 
+            # Variáveis são iniciadas aqui para que não sejam mudadas indevidamente no loop de envio
             recieved = bytes()
             start = time.time()
             time_out_time = time.time()
 
+        # Server recebe os pacotes e checa seus conteúdos
         else:
+             
             dataRx = com.getData(Protocol.max_size, time.time())
             data, code, atual = unpacker.unpack(dataRx)
 
@@ -103,9 +103,13 @@ def main():
             print("Contador {} e atual {} e código {}".format(count, atual, code))
             print("-------------------------")
 
+            # Enquanto todos os pacotes ainda não foram recebido, é checado se ainda não ocorreu um timeout
             if count <= total and (time.time() - time_out_time) < Protocol.great_timeout:
 
+                # Se o pacote recebido conter o código certo e seu número bater com o esperado,
+                # seu conteúdo é adicionado e uma mensagem de confirmação é enviada
                 if code == Protocol.type_package_delivery and atual == count:
+                    
                     print("-------------------------")
                     print("Pacote {} de {} recebido".format(atual, total))
                     print("-------------------------")
@@ -118,6 +122,8 @@ def main():
                     count += 1
                     time_out_time = time.time()
 
+                # Se o pacote recebido não conter o código certo eou seu número não bater com o esperado,
+                # seu conteúdo é ignorado e uma mensage de erro com o pacote esperado é enviada
                 else:
                     print("-------------------------")
                     print("Erro")
@@ -129,7 +135,8 @@ def main():
                     while(com.tx.getIsBussy()):
                         pass
                     
-
+            # Quando todos os pacotes forem recebidos o stuffing, se houver, é removido e o arquivo salvo
+            # O server volta para seu estado ocioso
             elif count > total:
                 end = time.time() - start
 
@@ -152,6 +159,7 @@ def main():
                 com.rx.clearBuffer()
                 count = 1
 
+            # Se mais tempo que o estipulado para um timeout passou, o server volta para seu estado ocioso
             else:
                 print("-------------------------")
                 print("Timeout")
@@ -167,6 +175,6 @@ def main():
                 count = 1
 
 
-    #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
+#so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
     main()
