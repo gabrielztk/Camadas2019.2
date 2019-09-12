@@ -9,11 +9,11 @@
 
 print("comecou")
 
-from enlace import *
-from protocol import *
-from packer import *
-from unpacker import *
-from ports import *
+from enlace import Enlace
+from protocol import Protocol
+from packer import Packer
+from unpacker import Unpacker
+from ports import serial_ports
 import time
 from functions import *
 
@@ -34,8 +34,10 @@ serialName = select_port()
 
 def main():
     # Inicializa enlace ... variavel com possui todos os metodos e propriedades do enlace, que funciona em threading
-    
+    com = Enlace(serialName) 
     # Ativa comunicacao
+    com.enable()
+    com.rx.clearBuffer()
     
     packer = Packer()
     unpacker = Unpacker()
@@ -45,57 +47,60 @@ def main():
     
     run = True
     call = True
+    response = False
     serverReady_message_get = False
     count = 1
 
     while(run):
 
-        if call:
+        if not response:
 
-            selected = select_file()
-
-            print("-------------------------")
-            print("Gerando dados para transmissao :")
-            print("-------------------------")
-
-            data = open(selected,"rb").read()
-            delivery, total = packer.pack(data, get_kind(selected), Protocol.type_package_delivery, get_total=True)
-
-            com = enlace(serialName) 
-            com.enable()
-            com.rx.clearBuffer()
-
-            print("-------------------------")
-            print("Chamando o server para tranferência de dados")
-            print("-------------------------")
-
-            message = packer.pack_message(Protocol.type_client_call, total, total, Protocol.sever_number)
-            com.sendData(message)
-            while(com.tx.getIsBussy()):
-                pass
-
-            call = False
-            message_timeot = time.time()
-            
-            
-        
-        elif serverReady_message_get == False and (time.time() - message_timeot) < Protocol.great_timeout:
-            
-            dataRx = com.getData(Protocol.max_size, time.time())
-            data, code, atual = unpacker.unpack(dataRx)
-
-            if code == Protocol.type_server_ready:
-                serverReady_message_get = True
+            if call:
+                selected = select_file()
 
                 print("-------------------------")
-                print("Server pronto, começando o envio")
+                print("Gerando dados para transmissao :")
                 print("-------------------------")
 
-                start = time.time()
-                time_out_time = time.time()
-                count = 1
+                data = open(selected,"rb").read()
+                delivery, total = packer.pack(data, get_kind(selected), Protocol.type_package_delivery, get_total=True)
 
-        elif not call and serverReady_message_get == True:
+
+                print("-------------------------")
+                print("Chamando o server para tranferência de dados")
+                print("-------------------------")
+                message_timeot = time.time()
+                call = False
+
+            else:
+                if (time.time() - message_timeot) < Protocol.great_timeout:
+                    message = packer.pack_message(Protocol.type_client_call, total, total, Protocol.sever_number)
+                    com.sendData(message)
+                    while(com.tx.getIsBussy()):
+                        pass
+
+
+                    dataRx = com.getData(Protocol.max_size, time.time())
+                    data, code, atual = unpacker.unpack(dataRx)
+
+                    if code == Protocol.type_server_ready:
+                        serverReady_message_get = True
+                        response = True
+
+                        print("-------------------------")
+                        print("Server pronto, começando o envio")
+                        print("-------------------------")
+
+                        start = time.time()
+                        time_out_time = time.time()
+                        count = 1
+
+                else:
+                    response = True
+
+            
+
+        elif not call and serverReady_message_get:
             
 
             if count <= total and (time.time() - time_out_time) < Protocol.great_timeout:
@@ -140,20 +145,20 @@ def main():
 
                 call = True
                 serverReady_message_get = False
+                response = False
                 count = 1
 
                 if go_on != "sim":
                     print("-------------------------")
                     print("Até mais!")
                     print("-------------------------")
-                run = False
+                    run = False
                 
 
             else:
                 print("-------------------------")
                 print("O server não respondeu e um timeout ocorreu")
                 print("-------------------------")
-                com.disable()
 
                 print("-------------------------")
                 go_on = input("Se desejar um novo envio digite sim, caso contrário outro caractere: ")
@@ -161,6 +166,7 @@ def main():
 
                 call = True
                 serverReady_message_get = False
+                response = False
                 count = 1
 
                 if go_on != "sim":
@@ -174,7 +180,6 @@ def main():
             print("-------------------------")
             print("O server não respondeu e um timeout ocorreu")
             print("-------------------------")
-            com.disable()
 
             print("-------------------------")
             go_on = input("Se desejar um novo envio digite sim, caso contrário outro caractere: ")
@@ -182,6 +187,7 @@ def main():
 
             call = True
             serverReady_message_get = False
+            response = False
             count = 1
 
             if go_on != "sim":

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from ports import *
-from protocol import *
+from ports import serial_ports
+from protocol import Protocol
 def select_file():
     import os
     path = os.getcwd()
