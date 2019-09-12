@@ -15,7 +15,7 @@ from interfaceFisica import fisica
 from enlaceRx import RX
 from enlaceTx import TX
 
-class enlace(object):
+class Enlace(object):
     """ This class implements methods to the interface between Enlace and Application
     """
 

@@ -37,12 +37,14 @@ class Unpacker(object):
             kind = package[5]
 
             server = package[7]
+            client = package[8]
 
-            return data, code, kind, total, server
+            return data, code, kind, total, server, client
             
         else:
+            client = package[8]
             atual = int.from_bytes(package[1:3], byteorder=Protocol.byteorder)
-            return data, code, atual
+            return data, code, atual, client
 
     def destuff(self, data):
 

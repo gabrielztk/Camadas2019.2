@@ -15,7 +15,7 @@ class Packer(object):
         self.stuffing = Stuffing()
 
 
-    def pack(self, data, kind, code):
+    def pack(self, data, kind, code, client, get_total=False):
 
         self.data = data
         self.kind = kind
@@ -28,6 +28,7 @@ class Packer(object):
 
         self.header.updateKind(kind)
         self.header.updateCode(code)
+        self.header.updateClient(client)
         self.header.updateTotal(self.total)
         self.header.update()
 
@@ -35,16 +36,21 @@ class Packer(object):
 
         back = self.payload
         self.payload = []
+        
+        if get_total:
+            return back, self.total
+        else:
+            return back
+        
 
-        return back
 
-
-    def pack_message(self, code, atual, total, server):
+    def pack_message(self, code, atual, total, server, client):
 
         self.header.updateCode(code)
         self.header.updateAtual(atual)
         self.header.updateTotal(total)
         self.header.updateServer(server)
+        self.header.updateClient(client)
         self.header.update()
 
 
@@ -74,4 +80,3 @@ class Packer(object):
     def stuff(self):
 
         self.data = self.stuffing.stuff(self.data)
-
