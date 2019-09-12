@@ -51,6 +51,8 @@ def main():
     com.rx.clearBuffer()
 #    time.sleep(1)
     
+    f= open("Log\LogClient.txt","w+")
+    
     servidor = Protocol.sever_number
 
     packer = Packer()
@@ -79,7 +81,8 @@ def main():
     code = Protocol.type_client_call
     back = packer.pack_message(code, contador, total, servidor)
     
-    while code != Protocol.type_server_ready: 
+    while code != Protocol.type_server_ready:
+        f.write("Tipo de mensagem: {} - enviada: {} - destinatário: {}\n".format(code,time.ctime(time.time()),servidor))
         com.sendData(back)
         
         while(com.tx.getIsBussy()):
@@ -88,6 +91,8 @@ def main():
         rxBuffer = com.getData(Protocol.max_size, time.time())
                 
         response, code, atual = unpacker.unpack(rxBuffer)
+        data1, code1, kind1, total1, server1 = unpacker.unpack(rxBuffer, first=True)
+        f.write("Tipo de mensagem: {} - enviada: {} - remetente: {}\n".format(code,time.ctime(time.time()),server1))
 
     # Transmite dado
     print("-------------------------")
@@ -103,6 +108,10 @@ def main():
     while count <= total:        
         start = time.time()
         com.sendData(delivery[count-1])
+        
+        data, code, kind, total, server = unpacker.unpack(delivery[count-1], first=True)
+        f.write("Tipo de mensagem: {} - enviada: {} - destinatário: {}\n".format(code,time.ctime(time.time()),server))
+
 
         while(com.tx.getIsBussy()):
             pass
@@ -116,10 +125,12 @@ def main():
         out = False
         time_out = False
         
-        while not out:   
+        while not out:
             rxBuffer = com.getData(Protocol.max_size, time.time())
     
             response, code, atual = unpacker.unpack(rxBuffer)
+            data2, code2, kind2, total2, server2 = unpacker.unpack(rxBuffer, first=True)
+            f.write("Tipo de mensagem: {} - enviada: {} - remetente: {}\n".format(code,time.ctime(time.time()),server2))
         
             if code == Protocol.type_package_ok:
                 print("-------------------------")
@@ -199,6 +210,8 @@ def main():
         print("-------------------------")
         print("Comunicação encerrada")
         print("-------------------------")
+    
+    f.close()
     
     # f = open("img_retorno.png","wb").write(rxBuffer)
     
