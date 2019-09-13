@@ -45,7 +45,7 @@ serialName = ports[p-1]
 
 def main():
     # Inicializa enlace ... variavel com possui todos os metodos e propriedades do enlace, que funciona em threading
-    com = enlace(serialName) # repare que o metodo construtor recebe um string (nome)
+    com = Enlace(serialName) # repare que o metodo construtor recebe um string (nome)
     # Ativa comunicacao
     com.enable()
     com.rx.clearBuffer()
@@ -54,6 +54,7 @@ def main():
     f= open("Log\LogClient.txt","w+")
     
     servidor = Protocol.sever_number
+    client = Protocol.client_number
 
     packer = Packer()
     unpacker = Unpacker()
@@ -73,13 +74,14 @@ def main():
     kind = Protocol.to_kind[type_file]
     code = Protocol.type_package_delivery
 
-    delivery = packer.pack(data, kind, code)
+    delivery, total = packer.pack(data, kind, code, client, get_total=True)
     
-    data, code, kind, total, server = unpacker.unpack(delivery[0], first=True)
+#    data, code, kind, total, server = unpacker.unpack(delivery[0], first=True)
+    
     
     contador = 1
     code = Protocol.type_client_call
-    back = packer.pack_message(code, contador, total, servidor)
+    back = packer.pack_message(code, contador, total, servidor, client)
     
     while code != Protocol.type_server_ready:
         f.write("Tipo de mensagem: {} - enviada: {} - destinatário: {}\n".format(code,time.ctime(time.time()),servidor))
@@ -90,8 +92,8 @@ def main():
         
         rxBuffer = com.getData(Protocol.max_size, time.time())
                 
-        response, code, atual = unpacker.unpack(rxBuffer)
-        data1, code1, kind1, total1, server1 = unpacker.unpack(rxBuffer, first=True)
+        response, code, atual, client = unpacker.unpack(rxBuffer)
+        data1, code1, kind1, total1, server1, client1 = unpacker.unpack(rxBuffer, first=True)
         f.write("Tipo de mensagem: {} - enviada: {} - remetente: {}\n".format(code,time.ctime(time.time()),server1))
 
     # Transmite dado
@@ -109,14 +111,14 @@ def main():
         start = time.time()
         com.sendData(delivery[count-1])
         
-        data, code, kind, total, server = unpacker.unpack(delivery[count-1], first=True)
-        f.write("Tipo de mensagem: {} - enviada: {} - destinatário: {}\n".format(code,time.ctime(time.time()),server))
+        data, code, kind, total, server4, client = unpacker.unpack(delivery[count-1], first=True)
+        f.write("Tipo de mensagem: {} - enviada: {} - destinatário: {}\n".format(code,time.ctime(time.time()),servidor))
 
 
         while(com.tx.getIsBussy()):
             pass
         
-        data, code, atual = unpacker.unpack(delivery[count-1])
+        data, code, atual, client = unpacker.unpack(delivery[count-1])
 
         print("-------------------------")
         print('Enviando {0} de {1}'.format(count,total))
@@ -128,8 +130,8 @@ def main():
         while not out:
             rxBuffer = com.getData(Protocol.max_size, time.time())
     
-            response, code, atual = unpacker.unpack(rxBuffer)
-            data2, code2, kind2, total2, server2 = unpacker.unpack(rxBuffer, first=True)
+            response, code, atual, client = unpacker.unpack(rxBuffer)
+            data2, code2, kind2, total2, server2, client2 = unpacker.unpack(rxBuffer, first=True)
             f.write("Tipo de mensagem: {} - enviada: {} - remetente: {}\n".format(code,time.ctime(time.time()),server2))
         
             if code == Protocol.type_package_ok:
@@ -146,7 +148,7 @@ def main():
                 time_out = True
                 
                 code = Protocol.type_time_out
-                back = packer.pack_message(code, contador, total, server)
+                back = packer.pack_message(code2, contador, total2, server2, client2)
                 
                 com.rx.clearBuffer()
                 com.sendData(back)
@@ -162,7 +164,7 @@ def main():
                 
                 timer1 = time.time()
                 
-                data, code, atual = unpacker.unpack(delivery[count-1])
+                data, code, atual, client = unpacker.unpack(delivery[count-1])
                 
                 print("timeout timer1")
                 
