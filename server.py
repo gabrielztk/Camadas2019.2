@@ -65,7 +65,6 @@ def main():
         if ocioso:
             dataRx = com.getData(Protocol.max_size, time.time())
             data, code, kind, total, server, client = unpacker.unpack(dataRx, first=True)
-            client_number = client
 
             # Server checa se o código e número de server da mensagem estão certos
             if code == Protocol.type_client_call and server == my_server:
@@ -73,10 +72,11 @@ def main():
                 log = open("log/fille{:02}log_try{:02}.txt".format(file_num, try_num),"w+")
                 # Server deixa de estar ocioso
                 ocioso = False
+                client_number = client
                 print("-------------------------")
                 print("Server chamado pelo client")
                 print("-------------------------")
-                log.write("Msg: {} – recebida: {} – remetente: {}\n".format(code, time.ctime(time.time()), client_number))
+                log.write("Msg: {} – recebida: {} – remetente: {}\n".format(code, time.ctime(time.time()), client))
 
         # Server não está mais ociono mas ainda não mandou uma mensagem com Código 2   
         elif serverReady_message_sent == False:
@@ -112,7 +112,7 @@ def main():
                 print("Contador {} e atual {} e código {}".format(count, atual, code))
                 print("-------------------------")
 
-                log.write("Msg: {} – recebida: {} – remetente: {}\n".format(code, time.ctime(time.time()), client_number))
+                log.write("Msg: {} – recebida: {} – remetente: {}\n".format(code, time.ctime(time.time()), client))
 
                 # Se o pacote recebido conter o código certo e seu número bater com o esperado,
                 # seu conteúdo é adicionado e uma mensagem de confirmação é enviada
@@ -130,7 +130,7 @@ def main():
 
                     count += 1
                     time_out_time = time.time()
-                    log.write("Msg: {} – enviada: {} – destinatário: {}\n".format(Protocol.type_package_ok, time.ctime(time.time()), client_number))
+                    log.write("Msg: {} –  enviada: {} – destinatário: {}\n".format(Protocol.type_package_ok, time.ctime(time.time()), client_number))
 
                 # Se o pacote recebido não conter o código certo eou seu número não bater com o esperado,
                 # seu conteúdo é ignorado e uma mensage de erro com o pacote esperado é enviada
@@ -145,7 +145,7 @@ def main():
                     while(com.tx.getIsBussy()):
                         pass
 
-                    log.write("Msg: {} – enviada: {} – destinatário: {}\n".format(Protocol.type_error, time.ctime(time.time()), client_number))
+                    log.write("Msg: {} –  enviada: {} – destinatário: {}\n".format(Protocol.type_error, time.ctime(time.time()), client_number))
                     
             # Quando todos os pacotes forem recebidos o stuffing, se houver, é removido e o arquivo salvo
             # O server volta para seu estado ocioso
@@ -188,7 +188,8 @@ def main():
                 ocioso = True
                 serverReady_message_sent = False
                 count = 1
-                log.write("Msg: {} – enviada: {} – destinatário: {}\n".format(Protocol.type_time_out, time.ctime(time.time()), client_number))
+                log.write("Msg: {} –  enviada: {} – destinatário: {}\n".format(Protocol.type_time_out, time.ctime(time.time()), client_number))
+                log.write("Encerrado\n")
                 log.close()
 
 
