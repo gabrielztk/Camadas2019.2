@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from protocol import *
+from PyCRC.CRC16 import CRC16
 
 class Unpacker(object):
 
@@ -9,6 +10,7 @@ class Unpacker(object):
 
         self.eop = EOP()
         self.stuffing = Stuffing()
+        self.crc = CRC16()
 
     def unpack(self, package, first=False):
 
@@ -22,8 +24,14 @@ class Unpacker(object):
 
                 size = package[0]
                 code = package[6]
+                crc = package[9:11]
                 if code != Protocol.type_error:
                     data = package[12:Protocol.header_size + size]
+                    
+                    crc = int.from_bytes(crc, byteorder=Protocol.byteorder)
+                    
+                    if crc != self.crc.calculate(data):
+                        code = Protocol.type_error
 
             else:
                 code = Protocol.type_error
