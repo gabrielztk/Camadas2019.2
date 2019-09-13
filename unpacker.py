@@ -27,11 +27,14 @@ class Unpacker(object):
                 crc = package[9:11]
                 if code != Protocol.type_error:
                     data = package[12:Protocol.header_size + size]
-                    
                     crc = int.from_bytes(crc, byteorder=Protocol.byteorder)
-                    
-                    if crc != self.crc.calculate(data):
-                        code = Protocol.type_error
+
+                    if size == Protocol.data_size:
+                        if crc != self.crc.calculate(data):
+                            code = Protocol.type_error
+                    else:
+                        if crc != self.crc.calculate(data + (0).to_bytes(Protocol.data_size - size, byteorder=Protocol.byteorder)):
+                            code = Protocol.type_error
 
             else:
                 code = Protocol.type_error
