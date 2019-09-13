@@ -23,15 +23,17 @@ class Header(object):
         self.server = (0).to_bytes(1, byteorder=Protocol.byteorder)
         # Número do client
         self.client = (0).to_bytes(1, byteorder=Protocol.byteorder)
+        # Número do client
+        self.crc = (0).to_bytes(2, byteorder=Protocol.byteorder)        
         # Bytes livres
-        self.free = (0).to_bytes(3, byteorder=Protocol.byteorder)
+        self.free = (0).to_bytes(1, byteorder=Protocol.byteorder)
         # Concatendo os bytes na ordem desejada
-        self.body = self.size + self.atual + self.total + self.kind + self.code + self.server + self.client + self.free
+        self.body = self.size + self.atual + self.total + self.kind + self.code + self.server + self.client + self.crc + self.free
         # Tamanho do header
         self.length = len(self.body)
 
     def update(self):
-        self.body = self.size + self.atual + self.total + self.kind + self.code + self.server + self.client + self.free
+        self.body = self.size + self.atual + self.total + self.kind + self.code + self.server + self.client + self.crc + self.free
 
     def updateSize(self, size):
         self.size = (size).to_bytes(Protocol.size_size, byteorder=Protocol.byteorder)
@@ -54,6 +56,8 @@ class Header(object):
     def updateClient(self, client):
         self.client = (client).to_bytes(Protocol.client_size, byteorder=Protocol.byteorder)
 
+    def updateCRC(self, crc):
+        self.crc = (crc).to_bytes(Protocol.crc_size, byteorder=Protocol.byteorder)
 
 class EOP(object):
 
@@ -146,6 +150,7 @@ class Protocol(object):
     code_size = 1
     server_size = 1
     client_size = 1
+    crc_size = 2
     # Tamnho total do Header e do EOP
 
     header_size = 12

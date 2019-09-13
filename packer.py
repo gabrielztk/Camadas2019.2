@@ -4,6 +4,7 @@
 from protocol import *
 from unpacker import *
 from math import ceil
+from PyCRC.CRC16 import CRC16
 
 class Packer(object):
 
@@ -13,6 +14,7 @@ class Packer(object):
         self.header = Header()
         self.eop = EOP()
         self.stuffing = Stuffing()
+        self.crc = CRC16()
 
 
     def pack(self, data, kind, code, client, get_total=False):
@@ -51,6 +53,7 @@ class Packer(object):
         self.header.updateTotal(total)
         self.header.updateServer(server)
         self.header.updateClient(client)
+        self.header.updateCRC(self.crc.calculate(Protocol.empty_package))
         self.header.update()
 
 
@@ -69,9 +72,10 @@ class Packer(object):
 
             self.header.updateSize(nData)
             self.header.updateAtual(count)
-            self.header.update()
             
-            self.current = self.data[:nData] + (0).to_bytes((Protocol.data_size - nData), byteorder=Protocol.byteorder) 
+            self.current = self.data[:nData] + (0).to_bytes((Protocol.data_size - nData), byteorder=Protocol.byteorder)
+            self.header.updateCRC(self.crc.calculate(self.current)) 
+            self.header.update()
             self.data = self.data[nData:]
             self.payload.append(self.header.body + self.current + self.eop.body)
             count += 1
