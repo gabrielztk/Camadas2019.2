@@ -76,6 +76,7 @@ def main():
 
     delivery, total = packer.pack(data, kind, code, client, get_total=True)
     
+    
 #    data, code, kind, total, server = unpacker.unpack(delivery[0], first=True)
     
     
