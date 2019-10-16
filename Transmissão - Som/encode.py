@@ -24,8 +24,6 @@ def main():
     signal = signalMeu()
     #declare uma variavel com a frequencia de amostragem, sendo 44100
     fs = 44100
-    #voce importou a bilioteca sounddevice como, por exemplo, sd. entao
-    #os seguintes parametros devem ser setados:
     #tempo em segundos que ira emitir o sinal acustico 
     duration = 5
       
@@ -61,7 +59,7 @@ def main():
         if NUM in FREQS:
             break
         else:
-            print("Apenas valores de 0 a 9 podem ser selecionados")
+            print("Apenas valores mostrados podem ser selecionados")
     
     print("Gerando Tom referente ao símbolo : {}".format(NUM))
     #gere duas senoides para cada frequencia da tabela DTMF ! Canal x e canal y
